@@ -1,123 +1,238 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const PeopleHRApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class PeopleHRApp extends StatelessWidget {
+  const PeopleHRApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'PeopleHR Login',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7CB342)), // A nice green like BambooHR
+        useMaterial3: true,
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const MyHomePage(title: 'Flutter Demo Home Page'),
+        '/': (context) => const DomainLookupScreen(),
       },
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class DomainLookupScreen extends StatefulWidget {
+  const DomainLookupScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<DomainLookupScreen> createState() => _DomainLookupScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _DomainLookupScreenState extends State<DomainLookupScreen> {
+  final TextEditingController _domainController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
-  void _incrementCounter() {
+  Future<void> _redirectToDomain() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _isLoading = true;
     });
+
+    final companyName = _domainController.text.trim().toLowerCase();
+    final urlString = 'https://$companyName.peopleshr.com';
+    final Uri url = Uri.parse(urlString);
+
+    try {
+      // Launch the URL. 
+      // mode: LaunchMode.externalApplication ensures it opens in the browser 
+      // (or redirects the current tab if configured correctly for web).
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not launch $urlString')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _domainController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
+      backgroundColor: const Color(0xFFF5F5F5), // Light grey background
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text('$_counter', style: Theme.of(context).textTheme.headlineMedium),
-          ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo Placeholder
+              const Icon(
+                Icons.people_alt_rounded,
+                size: 64,
+                color: Color(0xFF7CB342),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'PeopleHR',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF333333),
+                ),
+              ),
+              const SizedBox(height: 40),
+              
+              // Main Card
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                color: Colors.white,
+                child: Container(
+                  width: 400, // Max width for larger screens
+                  padding: const EdgeInsets.all(32.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'What\'s your PeopleHR domain?',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'We\'ll send you to your organization\'s login page.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        // Domain Input
+                        TextFormField(
+                          controller: _domainController,
+                          decoration: const InputDecoration(
+                            labelText: 'Company Name',
+                            hintText: 'companyname',
+                            suffixText: '.peopleshr.com',
+                            suffixStyle: TextStyle(color: Colors.grey),
+                          ),
+                          keyboardType: TextInputType.url,
+                          textInputAction: TextInputAction.go,
+                          onFieldSubmitted: (_) => _redirectToDomain(),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your company name';
+                            }
+                            // Basic regex to check for valid subdomain characters (alphanumeric and hyphens)
+                            final validCharacters = RegExp(r'^[a-zA-Z0-9-]+$');
+                            if (!validCharacters.hasMatch(value.trim())) {
+                              return 'Please enter a valid company name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Continue Button
+                        SizedBox(
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _redirectToDomain,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7CB342),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Continue',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              TextButton(
+                onPressed: () {
+                  // Placeholder for help action
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Contact support at support@peopleshr.com')),
+                  );
+                },
+                child: const Text(
+                  'Don\'t know your domain?',
+                  style: TextStyle(color: Color(0xFF7CB342)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
