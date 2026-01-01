@@ -126,7 +126,8 @@ class _DomainLookupScreenState extends State<DomainLookupScreen> {
                 ),
                 color: Colors.white,
                 child: Container(
-                  width: 400, // Max width for larger screens
+                  constraints: const BoxConstraints(maxWidth: 400), // Responsive width
+                  width: double.infinity,
                   padding: const EdgeInsets.all(32.0),
                   child: Form(
                     key: _formKey,
